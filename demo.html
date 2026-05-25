@@ -1326,14 +1326,14 @@ function runQualityStep() {
       </div>`
     },
     {html:`
-      <div style="background:var(--white);border:1px solid var(--slate100);border-radius:8px;padding:16px;font-size:11px;margin-top:10px">
+      <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:16px;font-size:11px;margin-top:10px">
         <b style="color:var(--red)">📋 溯源证据链（多跳推理，每步可追溯）</b><br><br>
         <table style="width:100%;font-size:10px;border-collapse:collapse">
-          <tr style="background:var(--slate50)"><th style="padding:6px;text-align:left">跳数</th><th style="padding:6px;text-align:left">发现</th><th style="padding:6px;text-align:left">数据来源</th></tr>
+          <tr style="background:rgba(255,255,255,0.03)"><th style="padding:6px;text-align:left;color:rgba(255,255,255,0.55)">跳数</th><th style="padding:6px;text-align:left;color:rgba(255,255,255,0.55)">发现</th><th style="padding:6px;text-align:left;color:rgba(255,255,255,0.55)">数据来源</th></tr>
           <tr><td style="padding:6px">1</td><td>PVA 粘度 58.2（超标）</td><td>LIMS · 批次 B2026-0518</td></tr>
-          <tr style="background:var(--slate50)"><td style="padding:6px">2</td><td>聚合度控制偏差 +6%</td><td>DCS · 聚合工段 14:20-16:40</td></tr>
+          <tr style="background:rgba(255,255,255,0.03)"><td style="padding:6px">2</td><td>聚合度控制偏差 +6%</td><td>DCS · 聚合工段 14:20-16:40</td></tr>
           <tr><td style="padding:6px">3</td><td>引发剂加入量 92%（偏低 8%）</td><td>DCS · 流量计 FI-205</td></tr>
-          <tr style="background:var(--slate50)"><td style="padding:6px">4</td><td><b>根因：计量泵 A 流量波动 ±12%</b></td><td><b>设备管理系统 · 维护记录</b></td></tr>
+          <tr style="background:rgba(255,255,255,0.03)"><td style="padding:6px">4</td><td><b>根因：计量泵 A 流量波动 ±12%</b></td><td><b>设备管理系统 · 维护记录</b></td></tr>
         </table>
         <p style="margin-top:8px;font-size:10px;color:rgba(255,255,255,0.5)">⚡ 全程 4 跳追溯耗时 8 秒 · 本体驱动零幻觉 · 每步可点击查看原始数据</p>
       </div>
@@ -1369,23 +1369,23 @@ function runProfitStep() {
   const steps = [
     {html:`
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:11px">
-        <div style="background:#EEF2FF;padding:10px;border-radius:6px"><b>📦 ERP 成本</b><br>天然气采购价 3.82→4.56（↑19.4%）<br>日消耗 1.4万m³</div>
-        <div style="background:#ECFDF5;padding:10px;border-radius:6px"><b>🏭 MES 产量</b><br>PVA 42t · VAE 38t<br>醋酸乙烯 165t · 甲醇 250t</div>
-        <div style="background:#FFF7ED;padding:10px;border-radius:6px"><b>📋 销售价格</b><br>PVA 1.28万/t · VAE 0.86万/t<br>VAC 0.62万/t · 氢能 3.5元/kg</div>
-        <div style="background:#FDF2F8;padding:10px;border-radius:6px"><b>🔗 语义对齐</b><br>"天然气"↔"燃料成本"↔"动力费"<br>对齐 ERP/MES/OA 术语差异</div>
+        <div style="background:rgba(99,102,241,0.12);padding:10px;border-radius:6px"><b>📦 ERP 成本</b><br>天然气采购价 3.82→4.56（↑19.4%）<br>日消耗 1.4万m³</div>
+        <div style="background:rgba(16,185,129,0.10);padding:10px;border-radius:6px"><b>🏭 MES 产量</b><br>PVA 42t · VAE 38t<br>醋酸乙烯 165t · 甲醇 250t</div>
+        <div style="background:rgba(249,115,22,0.12);padding:10px;border-radius:6px"><b>📋 销售价格</b><br>PVA 1.28万/t · VAE 0.86万/t<br>VAC 0.62万/t · 氢能 3.5元/kg</div>
+        <div style="background:rgba(236,72,153,0.10);padding:10px;border-radius:6px"><b>🔗 语义对齐</b><br>"天然气"↔"燃料成本"↔"动力费"<br>对齐 ERP/MES/OA 术语差异</div>
       </div>
       <p style="text-align:center;margin-top:10px;font-size:10px;color:rgba(255,255,255,0.5)">⏱️ 跨系统数据拉取 + 语义对齐完成（&lt; 30 秒）</p>`
     },
     {html:`
-      <div style="background:var(--white);border:1px solid var(--slate100);border-radius:8px;padding:16px;font-size:11px">
+      <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:16px;font-size:11px">
         <b >📊 今日效益归因</b>
         <table style="width:100%;border-collapse:collapse;font-size:10px;margin-top:8px">
-          <tr style="background:var(--slate50)"><th style="padding:6px;text-align:left">产品</th><th style="padding:6px;text-align:right">边际贡献</th><th style="padding:6px;text-align:right">vs 昨日</th><th style="padding:6px;text-align:left">主因</th></tr>
+          <tr style="background:rgba(255,255,255,0.03)"><th style="padding:6px;text-align:left;color:rgba(255,255,255,0.55)">产品</th><th style="padding:6px;text-align:right;color:rgba(255,255,255,0.55)">边际贡献</th><th style="padding:6px;text-align:right;color:rgba(255,255,255,0.55)">vs 昨日</th><th style="padding:6px;text-align:left;color:rgba(255,255,255,0.55)">主因</th></tr>
           <tr><td style="padding:6px">PVA</td><td style="padding:6px;text-align:right;color:var(--red)">-6.8万</td><td style="padding:6px;text-align:right;color:var(--red)">↓12%</td><td style="padding:6px">天然气涨价+原料消耗高</td></tr>
-          <tr style="background:var(--slate50)"><td style="padding:6px">VAE</td><td style="padding:6px;text-align:right;color:var(--green)">+2.1万</td><td style="padding:6px;text-align:right;color:var(--green)">↑5%</td><td style="padding:6px">订单价上调 + 能耗优化</td></tr>
+          <tr style="background:rgba(255,255,255,0.03)"><td style="padding:6px">VAE</td><td style="padding:6px;text-align:right;color:var(--green)">+2.1万</td><td style="padding:6px;text-align:right;color:var(--green)">↑5%</td><td style="padding:6px">订单价上调 + 能耗优化</td></tr>
           <tr><td style="padding:6px">VAC</td><td style="padding:6px;text-align:right;color:var(--red)">-3.2万</td><td style="padding:6px;text-align:right;color:var(--red)">↓8%</td><td style="padding:6px">天然气成本传导</td></tr>
-          <tr style="background:var(--slate50)"><td style="padding:6px">高纯氢</td><td style="padding:6px;text-align:right;color:var(--green)">+1.5万</td><td style="padding:6px;text-align:right;color:var(--green)">↑15%</td><td style="padding:6px">加氢站需求增长</td></tr>
-          <tr style="font-weight:700;border-top:2px solid var(--slate800)"><td style="padding:6px">合计</td><td style="padding:6px;text-align:right;color:var(--red)">-6.4万</td><td style="padding:6px;text-align:right">—</td><td style="padding:6px">天然气涨价主因（贡献71%）</td></tr>
+          <tr style="background:rgba(255,255,255,0.03)"><td style="padding:6px">高纯氢</td><td style="padding:6px;text-align:right;color:var(--green)">+1.5万</td><td style="padding:6px;text-align:right;color:var(--green)">↑15%</td><td style="padding:6px">加氢站需求增长</td></tr>
+          <tr style="font-weight:700;border-top:2px solid rgba(255,255,255,0.12)"><td style="padding:6px">合计</td><td style="padding:6px;text-align:right;color:var(--red)">-6.4万</td><td style="padding:6px;text-align:right">—</td><td style="padding:6px">天然气涨价主因（贡献71%）</td></tr>
         </table>
       </div>`
     },
@@ -1436,8 +1436,8 @@ function runSafetyStep() {
     },
     {alert:true,title:'🔍 规则层校验：安全红线检查',detail:'虚拟传感器推算泄漏速率 0.05 kg/h（非紧急）· 安全规则检查：未触发联锁阈值 · 关联中石化安全红线 §4.2（球罐区管理）',html:`
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:11px">
-        <div style="background:#FEF2F2;padding:12px;border-radius:6px"><b>📐 规则层校验</b><br>• 中石化安全红线 §4.2 ✓<br>• 联锁阈值未触发 ✓<br>• 泄漏等级：轻微（0.05kg/h）<br>• 处置优先级：P2（24h内处理）</div>
-        <div style="background:#EEF2FF;padding:12px;border-radius:6px"><b>📋 匹配预案</b><br>• 预案 B-7：球罐法兰紧固<br>• 历史案例：2024.09 同类事件<br>• 处置耗时预估：2 小时<br>• 无需停车</div>
+        <div style="background:rgba(239,68,68,0.10);padding:12px;border-radius:6px"><b>📐 规则层校验</b><br>• 中石化安全红线 §4.2 ✓<br>• 联锁阈值未触发 ✓<br>• 泄漏等级：轻微（0.05kg/h）<br>• 处置优先级：P2（24h内处理）</div>
+        <div style="background:rgba(99,102,241,0.12);padding:12px;border-radius:6px"><b>📋 匹配预案</b><br>• 预案 B-7：球罐法兰紧固<br>• 历史案例：2024.09 同类事件<br>• 处置耗时预估：2 小时<br>• 无需停车</div>
       </div>`
     },
     {alert:false,title:'',detail:'',html:`
@@ -1469,7 +1469,7 @@ function sceneRD(c) {
         <b>🔬 场景：</b>研发工程师需要开发一款用于高端合成树脂的 PVA 分散剂，解决"卡脖子"问题<br><br>
         <b>❓ 提问：</b><i>"设计一款用于悬浮聚合的 PVA 分散剂，目标粒度 150-200μm，需要哪些条件？"</i>
       </div>
-      <div style="background:var(--white);border:1px solid var(--slate100);border-radius:8px;padding:16px;font-size:11px;line-height:1.7">
+      <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:16px;font-size:11px;line-height:1.7">
         <b style="color:var(--purple)">🤖 研发知识助手 · 回答：</b><br><br>
         <b>1. 配方推荐（基于川维内部实验库 + 专利分析）：</b><br>
         • PVA 醇解度：78-82 mol%（兼顾分散性与保胶能力）<br>
