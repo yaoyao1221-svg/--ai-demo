@@ -1296,6 +1296,67 @@ function arch(c) {
         </div>
       </div>
     </div>
+
+    <!-- Flink CEP + LangGraph Bridge -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
+      <!-- Flink CEP Pattern -->
+      <div class="card">
+        <h3 style="color:var(--red);font-size:14px;margin-bottom:10px">🌪️ Flink CEP 多测点复合预警</h3>
+        <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:12px">单点超标只是表象 · 空间×时间多维模式匹配 · 15 秒内跨装置因果链捕捉</div>
+        <div style="background:rgba(0,0,0,0.25);border-radius:8px;padding:12px;margin-bottom:10px">
+          <div style="font-size:10px;color:rgba(255,255,255,0.45);margin-bottom:8px">裂解炉结焦/爆管复合预警模式</div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:9px">
+            <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:8px;flex:1;text-align:center">
+              <div style="color:var(--red);font-weight:700;margin-bottom:3px">Condition A</div>
+              <div style="color:rgba(255,255,255,0.6)">CW_YIXIE_AC02_TE001</div>
+              <div style="color:var(--amber)">5秒内 3 次扰动</div>
+              <div style="color:rgba(255,255,255,0.4)">每次爬升 &gt; 5°C</div>
+            </div>
+            <div style="color:rgba(255,255,255,0.2);font-size:16px">→</div>
+            <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:6px;padding:8px;flex:1;text-align:center">
+              <div style="color:var(--amber);font-weight:700;margin-bottom:3px">Condition B</div>
+              <div style="color:rgba(255,255,255,0.6)">CW_YIXIE_AC02_PT002</div>
+              <div style="color:var(--amber)">10 秒内压力突降</div>
+              <div style="color:rgba(255,255,255,0.4)">瞬时跌幅 &gt; 10%</div>
+            </div>
+          </div>
+          <div style="text-align:center;margin-top:8px;font-size:9px;color:rgba(255,255,255,0.4)">
+            <span style="color:var(--cyan)">.within(15s)</span> → 匹配成功触发 HS-15 非计划停车预防规则
+          </div>
+        </div>
+        <div style="font-size:9px;color:rgba(255,255,255,0.5);line-height:1.5">
+          与 DCS 单点报警的本质区别：单看温度可能只是负荷调整，单看压力可能是下游抽气波动；但两者在 15 秒内先后发生，Flink CEP 状态机判定为裂解炉结焦/微爆管高危隐患
+        </div>
+      </div>
+
+      <!-- CEP → LangGraph Bridge -->
+      <div class="card">
+        <h3 style="color:var(--purple);font-size:14px;margin-bottom:10px">🔗 CEP → LangGraph 神经桥接</h3>
+        <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:12px">从"数据感知"到"智能行动"的毫秒级闭环 · 异步解耦投递</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px;background:rgba(15,23,42,0.6);border-radius:8px;padding:10px">
+            <div style="background:rgba(239,68,68,0.15);color:var(--red);border-radius:6px;padding:5px 10px;font-size:10px;font-weight:700;white-space:nowrap">Flink CEP Engine</div>
+            <div style="color:rgba(255,255,255,0.2)">→</div>
+            <div style="font-size:9px;color:rgba(255,255,255,0.55)">捕获复合模式 → 组装 alert_context JSON<br><span style="font-family:monospace;font-size:8px;color:rgba(255,255,255,0.35)">{rule_id, trigger_assets, description, payload}</span></div>
+          </div>
+          <div style="text-align:center;color:rgba(255,255,255,0.15)">▼</div>
+          <div style="display:flex;align-items:center;gap:8px;background:rgba(15,23,42,0.6);border-radius:8px;padding:10px">
+            <div style="background:rgba(245,158,11,0.15);color:var(--amber);border-radius:6px;padding:5px 10px;font-size:10px;font-weight:700;white-space:nowrap">Kafka Alert Topic</div>
+            <div style="color:rgba(255,255,255,0.2)">→</div>
+            <div style="font-size:9px;color:rgba(255,255,255,0.55)">异步投递 · 解耦 Flink 与 LangGraph<br><span style="font-size:8px;color:rgba(255,255,255,0.35)">避免流处理背压阻塞 AI 推理</span></div>
+          </div>
+          <div style="text-align:center;color:rgba(255,255,255,0.15)">▼</div>
+          <div style="display:flex;align-items:center;gap:8px;background:rgba(15,23,42,0.6);border-radius:8px;padding:10px">
+            <div style="background:rgba(139,92,246,0.15);color:var(--purple);border-radius:6px;padding:5px 10px;font-size:10px;font-weight:700;white-space:nowrap">LangGraph.invoke()</div>
+            <div style="color:rgba(255,255,255,0.2)">→</div>
+            <div style="font-size:9px;color:rgba(255,255,255,0.55)">alert_context → initial_state<br><span style="font-size:8px;color:rgba(255,255,255,0.35)">自动唤醒 optimization → compliance → dcs/fallback</span></div>
+          </div>
+        </div>
+        <div style="margin-top:10px;font-size:9px;color:var(--green);text-align:center">
+          ✅ 从测点异动到 DCS 闭环退守 · 全自动 · 无需人工提问触发
+        </div>
+      </div>
+    </div>
   `;
 }
 
