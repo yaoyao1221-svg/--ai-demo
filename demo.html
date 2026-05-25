@@ -1,3 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>川维化工 AI 智能体平台</title>
+<script src="https://cdn.jsdelivr.net/npm/vis-data@7.1.9/dist/vis-data.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.6/dist/vis-network.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --navy:#0A1628;--cyan:#06B6D4;--cyanDk:#0891B2;--amber:#F59E0B;--red:#EF4444;
+  --slate50:#F8FAFC;--slate100:#E2E8F0;--slate600:#64748B;--slate800:#1E293B;
+  --white:#FFFFFF;--cardBg:#F0F4F8;--green:#10B981;--purple:#8B5CF6;
+  --glow-cyan:0 0 20px rgba(6,182,212,0.15);--glow-purple:0 0 20px rgba(139,92,246,0.15);
+  --glow-amber:0 0 20px rgba(245,158,11,0.15);--glow-red:0 0 20px rgba(239,68,68,0.15);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#0F172A;color:#E2E8F0;overflow:hidden;height:100vh}
+
+/* ── Background Pattern ── */
+body::before{
+  content:'';position:fixed;top:0;left:0;width:100%;height:100%;
+  background:radial-gradient(ellipse at 20% 50%,rgba(6,182,212,0.06) 0%,transparent 50%),
+             radial-gradient(ellipse at 80% 20%,rgba(139,92,246,0.04) 0%,transparent 50%),
+             radial-gradient(ellipse at 50% 80%,rgba(245,158,11,0.04) 0%,transparent 50%);
+  pointer-events:none;z-index:0;
+}
+
+/* ── Top Bar ── */
+.topbar{
+  background:linear-gradient(135deg,#0A1628 0%,#0F2B46 50%,#0A1628 100%);
+  color:var(--white);padding:0 20px;height:54px;display:flex;align-items:center;
+  justify-content:space-between;flex-shrink:0;position:relative;z-index:10;
+  border-bottom:1px solid rgba(6,182,212,0.15);box-shadow:0 1px 20px rgba(0,0,0,0.3);
+}
+.topbar .logo{display:flex;align-items:center;gap:10px}
+.topbar .logo .icon{
+  width:32px;height:32px;background:linear-gradient(135deg,var(--cyan),var(--cyanDk));
+  border-radius:8px;display:flex;align-items:center;justify-content:center;
+  font-size:16px;font-weight:800;box-shadow:0 0 15px rgba(6,182,212,0.3);
+}
+.topbar .logo .name{font-size:17px;font-weight:700;letter-spacing:0.5px}
+.topbar .logo .tag{font-size:9px;color:var(--cyan);margin-left:2px;margin-top:3px;opacity:0.8}
+.topbar .roles{display:flex;gap:6px;align-items:center}
+.topbar .roles select{
+  background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.7);
+  border:1px solid rgba(255,255,255,0.1);padding:6px 10px;border-radius:20px;
+  font-size:11px;cursor:pointer;outline:none;margin-right:6px;transition:all 0.2s;
+}
+.topbar .roles select:hover{border-color:rgba(6,182,212,0.4);color:rgba(255,255,255,0.9)}
+.topbar .roles select:focus{border-color:var(--cyan);box-shadow:0 0 10px rgba(6,182,212,0.2)}
+.topbar .roles select optgroup{font-weight:700;font-size:10px}
+.topbar .roles button{
+  background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.5);
+  border:1px solid rgba(255,255,255,0.08);padding:5px 14px;border-radius:20px;
+  font-size:11px;cursor:pointer;transition:all 0.2s;
+}
+.topbar .roles button:hover{background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.85);border-color:rgba(255,255,255,0.2)}
+.topbar .roles button.active{
+  background:linear-gradient(135deg,var(--cyan),var(--cyanDk));
+  color:var(--white);border-color:transparent;font-weight:600;
+  box-shadow:0 0 15px rgba(6,182,212,0.3);
+}
+
+/* ── Layout ── */
+.main{display:flex;height:calc(100vh - 54px);position:relative;z-index:1}
+.sidebar{
+  width:230px;background:rgba(15,23,42,0.9);border-right:1px solid rgba(6,182,212,0.08);
+  display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;backdrop-filter:blur(10px);
+}
+.sidebar .section{
+  padding:10px 16px;font-size:9px;color:rgba(6,182,212,0.6);letter-spacing:2px;
+  font-weight:700;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.04);
+}
+.sidebar .item{
+  padding:10px 16px;cursor:pointer;display:flex;align-items:center;gap:10px;
+  font-size:13px;color:rgba(255,255,255,0.55);transition:all 0.2s;
+  border-left:3px solid transparent;position:relative;
+}
+.sidebar .item:hover{background:rgba(6,182,212,0.06);color:rgba(255,255,255,0.85)}
+.sidebar .item.active{
+  background:rgba(6,182,212,0.1);border-left-color:var(--cyan);
+  color:var(--cyan);font-weight:600;box-shadow:inset 0 0 20px rgba(6,182,212,0.04);
+}
+.sidebar .item .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;box-shadow:0 0 6px currentColor}
+.content{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px;position:relative}
+
+/* ── Cards ── */
+.card{
+  background:rgba(15,23,42,0.7);border:1px solid rgba(255,255,255,0.06);
+  border-radius:12px;padding:20px;box-shadow:0 4px 20px rgba(0,0,0,0.2);
+  backdrop-filter:blur(5px);transition:all 0.3s;
+}
+.card h2{font-size:20px;margin-bottom:6px;color:#F1F5F9;letter-spacing:0.3px}
+.card .subtitle{font-size:12px;color:rgba(255,255,255,0.45);margin-bottom:14px}
+
+/* ── KPI Stats ── */
+.stat-row{display:flex;gap:14px;flex-wrap:wrap}
+.stat-box{
+  flex:1;min-width:140px;background:rgba(15,23,42,0.6);border:1px solid rgba(255,255,255,0.06);
+  border-radius:12px;padding:20px 16px;text-align:center;position:relative;overflow:hidden;
+  transition:all 0.3s;cursor:default;
+}
+.stat-box::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--cyan),transparent);
+  opacity:0;transition:opacity 0.3s;
+}
+.stat-box:hover{transform:translateY(-3px);box-shadow:var(--glow-cyan);border-color:rgba(6,182,212,0.2)}
+.stat-box:hover::before{opacity:1}
+.stat-box .val{
+  font-size:34px;font-weight:900;background:linear-gradient(135deg,#06B6D4,#22D3EE);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;line-height:1.2;
+}
+.stat-box .val.green{background:linear-gradient(135deg,#10B981,#34D399);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-box .val.amber{background:linear-gradient(135deg,#F59E0B,#FBBF24);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-box .val.purple{background:linear-gradient(135deg,#8B5CF6,#A78BFA);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-box .lbl{font-size:11px;color:rgba(255,255,255,0.45);margin-top:4px;letter-spacing:0.3px}
+.stat-box .trend{font-size:10px;margin-top:3px}
+.stat-box .trend.up{color:#10B981}.stat-box .trend.down{color:#EF4444}
+
+/* ── Data Panels ── */
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.dash-panel{
+  background:rgba(15,23,42,0.6);border:1px solid rgba(255,255,255,0.06);
+  border-radius:12px;padding:16px;transition:all 0.3s;
+}
+.dash-panel:hover{border-color:rgba(6,182,212,0.15);box-shadow:var(--glow-cyan)}
+.dash-panel .panel-hd{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.dash-panel .panel-icon{font-size:20px}
+.dash-panel .panel-title{font-size:14px;font-weight:700;color:#F1F5F9}
+.dash-panel .panel-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:11px}
+.dash-panel .panel-row:last-child{border-bottom:none}
+.dash-panel .panel-label{color:rgba(255,255,255,0.45)}
+.dash-panel .panel-value{color:#E2E8F0;font-weight:600;font-variant-numeric:tabular-nums}
+.dash-panel .panel-value.ok{color:#10B981}.dash-panel .panel-value.warn{color:#F59E0B}.dash-panel .panel-value.bad{color:#EF4444}
+
+/* ── Status Dot ── */
+.st-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px}
+.st-dot.online{background:#10B981;box-shadow:0 0 6px #10B981;animation:pulse2 2s infinite}
+.st-dot.warn{background:#F59E0B;box-shadow:0 0 6px #F59E0B}
+
+/* ── Progress Bar ── */
+.prog-bar{flex:1;height:5px;background:rgba(255,255,255,0.08);border-radius:10px;overflow:hidden;margin-left:10px}
+.prog-bar .fill{height:100%;border-radius:10px;transition:width 0.6s}
+.prog-bar .fill.cyan{background:linear-gradient(90deg,#06B6D4,#22D3EE)}
+.prog-bar .fill.purple{background:linear-gradient(90deg,#8B5CF6,#A78BFA)}
+.prog-bar .fill.green{background:linear-gradient(90deg,#10B981,#34D399)}
+
+@keyframes pulse2{0%,100%{opacity:1}50%{opacity:0.5}}
+
+/* ── Graph ── */
+.graph-box{width:100%;height:450px;border:1px solid rgba(255,255,255,0.06);border-radius:12px;overflow:hidden;background:rgba(10,22,40,0.5)}
+.legend{display:flex;gap:16px;margin-top:10px;font-size:10px;color:rgba(255,255,255,0.45);flex-wrap:wrap}
+.legend span{display:flex;align-items:center;gap:4px}
+.legend .dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+
+/* ── Agent Grid ── */
+.agent-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.agent-card{
+  background:rgba(15,23,42,0.6);border:1px solid rgba(255,255,255,0.06);
+  border-radius:12px;padding:16px;cursor:pointer;transition:all 0.3s;
+  position:relative;overflow:hidden;
+}
+.agent-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.agent-card:hover{transform:translateY(-3px);box-shadow:0 8px 30px rgba(0,0,0,0.3);border-color:rgba(6,182,212,0.2)}
+.agent-card.ops::before{background:linear-gradient(90deg,#F59E0B,#FBBF24)}
+.agent-card.hse::before{background:linear-gradient(90deg,#EF4444,#F87171)}
+.agent-card.biz::before{background:linear-gradient(90deg,#06B6D4,#22D3EE)}
+.agent-card.rd::before{background:linear-gradient(90deg,#8B5CF6,#A78BFA)}
+.agent-card .ag-icon{font-size:28px;margin-bottom:8px}
+.agent-card h4{font-size:14px;margin-bottom:4px;color:#F1F5F9}
+.agent-card .ag-domain{font-size:9px;color:rgba(255,255,255,0.35);margin-bottom:6px}
+.agent-card p{font-size:10px;color:rgba(255,255,255,0.5);line-height:1.5}
+
+/* ── Ontology Modules ── */
+.onto-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.onto-mod{
+  background:rgba(15,23,42,0.6);border:1px solid rgba(255,255,255,0.06);
+  border-radius:12px;padding:20px;text-align:center;transition:all 0.3s;
+  position:relative;overflow:hidden;
+}
+.onto-mod::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.onto-mod:hover{transform:translateY(-2px);box-shadow:0 6px 25px rgba(0,0,0,0.3)}
+.onto-mod h4{font-size:15px;margin-bottom:6px;color:#F1F5F9}
+.onto-mod .count{font-size:28px;font-weight:900;margin:8px 0}
+.onto-mod p{font-size:10px;color:rgba(255,255,255,0.45);line-height:1.5}
+
+/* ── Scenario Flow ── */
+.flow{display:flex;align-items:center;gap:10px;padding:16px 0;flex-wrap:wrap}
+.flow-step{
+  flex:1;min-width:110px;text-align:center;background:rgba(15,23,42,0.6);
+  border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:16px;transition:all 0.3s;
+}
+.flow-step:hover{border-color:rgba(6,182,212,0.2);box-shadow:var(--glow-cyan)}
+.flow-step .num{
+  width:28px;height:28px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:12px;font-weight:700;margin:0 auto 8px;
+  background:linear-gradient(135deg,#06B6D4,#0891B2);color:white;
+}
+.flow-step h4{font-size:12px;margin-bottom:4px;color:#E2E8F0}
+.flow-step p{font-size:10px;color:rgba(255,255,255,0.45);line-height:1.4}
+.flow-arrow{font-size:18px;color:var(--cyan);flex-shrink:0}
+
+/* ── Alert ── */
+.alert{
+  background:linear-gradient(135deg,#DC2626,#B91C1C);color:var(--white);
+  border-radius:10px;padding:16px 20px;display:flex;align-items:center;
+  gap:12px;animation:pulse3 2s infinite;box-shadow:0 0 30px rgba(220,38,38,0.3);
+}
+@keyframes pulse3{0%,100%{opacity:1}50%{opacity:.88}}
+.alert .al-icon{font-size:24px}
+.alert .al-content{flex:1}
+.alert .al-title{font-size:15px;font-weight:700}
+.alert .al-detail{font-size:11px;margin-top:4px;opacity:0.9}
+
+/* ── Chat ── */
+.chat-box{height:400px;display:flex;flex-direction:column;background:rgba(10,22,40,0.5);border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.06)}
+.chat-msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.chat-msg{max-width:82%;padding:10px 14px;border-radius:16px;font-size:12px;line-height:1.5;animation:fadeIn 0.3s}
+.chat-msg.user{
+  align-self:flex-end;background:linear-gradient(135deg,#06B6D4,#0891B2);
+  color:white;border-bottom-right-radius:4px;
+}
+.chat-msg.ai{
+  align-self:flex-start;background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);
+  color:#E2E8F0;border-bottom-left-radius:4px;
+}
+.chat-msg.sys{align-self:center;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.45);font-size:10px;border-radius:8px;max-width:90%}
+.chat-msg .lbl{font-size:9px;margin-bottom:4px;opacity:0.6}
+.chat-bar{display:flex;padding:12px;background:rgba(15,23,42,0.6);border-top:1px solid rgba(255,255,255,0.06);gap:8px}
+.chat-bar input{
+  flex:1;padding:8px 14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);
+  border-radius:20px;font-size:12px;outline:none;color:#E2E8F0;transition:all 0.2s;
+}
+.chat-bar input::placeholder{color:rgba(255,255,255,0.25)}
+.chat-bar input:focus{border-color:var(--cyan);box-shadow:0 0 10px rgba(6,182,212,0.15)}
+.chat-bar button{
+  background:linear-gradient(135deg,#06B6D4,#0891B2);color:white;border:none;
+  padding:8px 20px;border-radius:20px;cursor:pointer;font-size:12px;font-weight:600;
+  box-shadow:0 0 15px rgba(6,182,212,0.2);transition:all 0.2s;
+}
+.chat-bar button:hover{box-shadow:0 0 25px rgba(6,182,212,0.35);transform:translateY(-1px)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Architecture ── */
+.arch-stack{display:flex;flex-direction:column;gap:10px;max-width:750px;margin:0 auto}
+.arch-layer{padding:16px 20px;border-radius:10px;text-align:center;font-size:13px}
+.arch-layer.l1{background:rgba(10,22,40,0.8);color:#F1F5F9;border:1px solid rgba(255,255,255,0.1)}
+.arch-layer.l2{background:rgba(6,182,212,0.15);color:#06B6D4;border:1px solid rgba(6,182,212,0.2)}
+.arch-layer.l3{background:rgba(8,145,178,0.15);color:#22D3EE;border:1px solid rgba(8,145,178,0.2)}
+.arch-layer.l4{background:rgba(255,255,255,0.03);color:rgba(255,255,255,0.5);border:1px dashed rgba(255,255,255,0.1)}
+.arch-layer.l5{background:rgba(255,255,255,0.02);color:rgba(255,255,255,0.35);border:1px solid rgba(255,255,255,0.05);font-size:11px}
+
+.three-col{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.three-col .box{
+  background:rgba(15,23,42,0.6);border:1px solid rgba(255,255,255,0.06);
+  border-radius:12px;padding:20px;text-align:center;transition:all 0.3s;
+}
+.three-col .box:hover{box-shadow:0 6px 25px rgba(0,0,0,0.3)}
+.three-col .box .box-icon{font-size:32px;margin-bottom:8px}
+.three-col .box h4{font-size:15px;margin-bottom:8px;color:#E2E8F0}
+.three-col .box .tags{display:flex;gap:4px;justify-content:center;flex-wrap:wrap}
+.three-col .box .tag{
+  font-size:9px;padding:3px 10px;border-radius:12px;
+  background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.45);
+}
+
+.timeline{margin-top:14px;position:relative;padding-left:24px}
+.timeline::before{content:'';position:absolute;left:8px;top:0;bottom:0;width:1px;background:rgba(6,182,212,0.2)}
+.timeline-item{position:relative;margin-bottom:14px;padding-left:16px}
+.timeline-item::before{
+  content:'';position:absolute;left:-20px;top:4px;width:10px;height:10px;
+  border-radius:50%;background:var(--cyan);border:2px solid #0F172A;
+  box-shadow:0 0 10px rgba(6,182,212,0.4);
+}
+.timeline-item .t-time{font-size:10px;color:rgba(255,255,255,0.35)}
+.timeline-item .t-text{font-size:12px;margin-top:3px;color:rgba(255,255,255,0.6)}
+
+@media(max-width:768px){
+  .sidebar{display:none}.agent-grid,.onto-grid,.dash-grid{grid-template-columns:1fr}
+  .flow{flex-direction:column}.flow-arrow{transform:rotate(90deg)}
+}
+
+/* ── Dashboard Charts ── */
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.chart-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+
+/* Bar Chart */
+.bar-chart{display:flex;flex-direction:column;gap:10px}
+.bar-row{display:flex;align-items:center;gap:10px}
+.bar-label{width:70px;font-size:11px;color:rgba(255,255,255,0.6);text-align:right;flex-shrink:0}
+.bar-track{flex:1;height:22px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden;position:relative}
+.bar-fill{height:100%;border-radius:4px;transition:width 0.8s cubic-bezier(.4,0,.2,1);position:relative}
+.bar-fill.cyan{background:linear-gradient(90deg,rgba(6,182,212,.6),rgba(6,182,212,1))}
+.bar-fill.green{background:linear-gradient(90deg,rgba(16,185,129,.6),rgba(16,185,129,1))}
+.bar-fill.amber{background:linear-gradient(90deg,rgba(245,158,11,.6),rgba(245,158,11,1))}
+.bar-fill.purple{background:linear-gradient(90deg,rgba(139,92,246,.6),rgba(139,92,246,1))}
+.bar-fill.red{background:linear-gradient(90deg,rgba(239,68,68,.6),rgba(239,68,68,1))}
+.bar-val{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;font-weight:700;color:white;text-shadow:0 1px 2px rgba(0,0,0,.3)}
+
+/* Radial Gauge */
+.gauge-group{display:flex;justify-content:space-around;gap:12px;flex-wrap:wrap}
+.gauge{text-align:center;position:relative}
+.gauge svg{display:block;margin:0 auto}
+.gauge .g-val{font-size:24px;font-weight:900;fill:#F1F5F9}
+.gauge .g-lbl{font-size:10px;color:rgba(255,255,255,0.45);margin-top:4px}
+.gauge .g-unit{font-size:11px;fill:rgba(255,255,255,0.5)}
+
+/* Comparison Bars */
+.comp-chart{display:flex;align-items:flex-end;gap:20px;height:150px;padding:0 10px}
+.comp-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px}
+.comp-bar{width:100%;max-width:60px;border-radius:6px 6px 0 0;transition:height 0.8s cubic-bezier(.4,0,.2,1);position:relative;min-height:4px}
+.comp-val{font-size:13px;font-weight:800;color:#F1F5F9}
+.comp-lbl{font-size:10px;color:rgba(255,255,255,0.45);text-align:center}
+.comp-tag{font-size:9px;padding:1px 6px;border-radius:8px;margin-top:2px}
+.comp-tag.up{color:#10B981;background:rgba(16,185,129,0.1)}
+.comp-tag.down{color:#EF4444;background:rgba(239,68,68,0.1)}
+
+/* Mini sparkline indicator */
+.spark-row{display:flex;align-items:center;gap:8px;padding:4px 0}
+.spark-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.spark-dot.on{background:#10B981;box-shadow:0 0 8px rgba(16,185,129,.4)}
+.spark-dot.warn{background:#F59E0B;box-shadow:0 0 8px rgba(245,158,11,.4)}
+.spark-info{font-size:11px;color:rgba(255,255,255,0.6);flex:1}
+.spark-val{font-size:11px;font-weight:700;color:#E2E8F0}
+
+/* Info card row */
+.info-ribbon{display:flex;gap:10px;flex-wrap:wrap}
+.info-chip{flex:1;min-width:100px;background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.06);border-radius:20px;padding:6px 14px;text-align:center;font-size:10px}
+.info-chip .ic-val{font-weight:700;color:#22D3EE;font-size:13px}
+.info-chip .ic-lbl{color:rgba(255,255,255,0.4)}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ TOP BAR ═══════════ -->
+<div class="topbar">
+  <div class="logo">
+    <div class="icon">川</div>
+    <span class="name">川维化工 AI 智能体平台</span>
+    <span class="tag">DEMO v2.0</span>
+  </div>
+  <div class="roles" id="roleBar">
+	    <select id="deptSelect" onchange="switchDept(this.value)" style="background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.1);padding:5px 8px;border-radius:20px;font-size:10px;cursor:pointer;outline:none;max-width:130px" title="选择部门">
+	      <option value="all" style="color:#1E293B">🏢 全部部门</option>
+	      <optgroup label="8大运行部" style="color:#0891B2">
+	        <option value="800" style="color:#1E293B">乙炔运行部</option>
+	        <option value="801" style="color:#1E293B">甲醇运行部</option>
+	        <option value="802" style="color:#1E293B">聚乙烯醇运行部</option>
+	        <option value="803" style="color:#1E293B">乳液运行部</option>
+	        <option value="804" style="color:#1E293B">维纶运行部</option>
+	        <option value="805" style="color:#1E293B">热电运行部</option>
+	        <option value="806" style="color:#1E293B">水务运行部</option>
+	      </optgroup>
+	      <optgroup label="5大业务中心" style="color:#D97706">
+	        <option value="810" style="color:#1E293B">销售中心</option>
+	        <option value="811" style="color:#1E293B">物资采购中心</option>
+	        <option value="812" style="color:#1E293B">设备工程中心</option>
+	        <option value="815" style="color:#1E293B">检验计量中心</option>
+	        <option value="816" style="color:#1E293B">消防保卫中心</option>
+	      </optgroup>
+	      <optgroup label="12职能部门" style="color:#DC2626">
+	        <option value="807" style="color:#1E293B">安全环保部</option>
+	        <option value="808" style="color:#1E293B">生产运行部</option>
+	        <option value="809" style="color:#1E293B">技术发展部</option>
+	        <option value="817" style="color:#1E293B">总经理办公室</option>
+	        <option value="818" style="color:#1E293B">财务资产部</option>
+	        <option value="819" style="color:#1E293B">人力资源部</option>
+	        <option value="820" style="color:#1E293B">党群工作部</option>
+	        <option value="821" style="color:#1E293B">企业改革管理部</option>
+	        <option value="822" style="color:#1E293B">纪委监督部</option>
+	        <option value="823" style="color:#1E293B">发展规划部</option>
+	        <option value="824" style="color:#1E293B">信息管理部</option>
+	        <option value="825" style="color:#1E293B">法律事务部</option>
+	        <option value="826" style="color:#1E293B">工程管理部</option>
+	      </optgroup>
+	      <optgroup label="2科研机构" style="color:#7C3AED">
+	        <option value="813" style="color:#1E293B">研究院</option>
+	        <option value="814" style="color:#1E293B">博士后科研工作站</option>
+	      </optgroup>
+	    </select>
+	    <select id="roleSelect" onchange="switchRole(this.value)" style="background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.1);padding:5px 8px;border-radius:20px;font-size:10px;cursor:pointer;outline:none;max-width:120px" title="选择角色级别">
+	      <optgroup label="管理序列 L" style="color:#06B6D4">
+	        <option value="L1" style="color:#1E293B">L1 公司领导</option>
+	        <option value="L2" style="color:#1E293B">L2 部门正职</option>
+	        <option value="L3" style="color:#1E293B">L3 部门副职</option>
+	        <option value="L4" style="color:#1E293B">L4 主管/组长</option>
+	        <option value="L5" style="color:#1E293B">L5 普通员工</option>
+	      </optgroup>
+	      <optgroup label="技术序列 P" style="color:#8B5CF6">
+	        <option value="P1" style="color:#1E293B">P1 首席专家</option>
+	        <option value="P2" style="color:#1E293B">P2 高级专家</option>
+	        <option value="P3" style="color:#1E293B">P3 主任师</option>
+	        <option value="P4" style="color:#1E293B">P4 主管师</option>
+	        <option value="P5" style="color:#1E293B">P5 助理师</option>
+	      </optgroup>
+	      <optgroup label="操作序列 O" style="color:#F59E0B">
+	        <option value="O1" style="color:#1E293B">O1 高级技师</option>
+	        <option value="O2" style="color:#1E293B">O2 技师</option>
+	        <option value="O3" style="color:#1E293B">O3 高级工</option>
+	        <option value="O4" style="color:#1E293B">O4 中级工</option>
+	        <option value="O5" style="color:#1E293B">O5 初级工</option>
+	      </optgroup>
+	    </select>
+	    <button class="active" data-role="director">👤 厂长</button>
+	    <button data-role="safety">🛡️ 安全</button>
+	    <button data-role="scheduler">📊 调度</button>
+	    <button data-role="engineer">⚙️ 工程师</button>
+	  </div>
+</div>
+
+<div class="main">
+  <!-- ═══════════ SIDEBAR ═══════════ -->
+  <div class="sidebar">
+    <div class="section">平台总览</div>
+    <div class="item active" data-view="overview"><span class="dot" style="background:var(--cyan)"></span> 智能驾驶舱</div>
+    <div class="item" data-view="ontology"><span class="dot" style="background:var(--cyanDk)"></span> 企业本体设计</div>
+    <div class="item" data-view="agents"><span class="dot" style="background:var(--purple)"></span> 八大智能体群</div>
+    <div class="section">核心场景</div>
+    <div class="item" data-view="scene-furnace"><span class="dot" style="background:var(--amber)"></span> 裂解炉运行优化</div>
+    <div class="item" data-view="scene-quality"><span class="dot" style="background:var(--red)"></span> 质量异常溯源</div>
+    <div class="item" data-view="scene-profit"><span class="dot" style="background:var(--cyan)"></span> 日效益归因分析</div>
+    <div class="item" data-view="scene-safety"><span class="dot" style="background:var(--red)"></span> 工艺安全预警</div>
+    <div class="item" data-view="scene-rd"><span class="dot" style="background:var(--purple)"></span> 研发知识助手</div>
+    <div class="section">技术架构</div>
+    <div class="item" data-view="arch"><span class="dot" style="background:var(--slate600)"></span> 系统架构</div>
+    <div class="section">交互体验</div>
+    <div class="item" data-view="chat"><span class="dot" style="background:var(--green)"></span> 智能对话</div>
+  </div>
+
+  <div class="content" id="content"></div>
+</div>
+
 <script>
 // ── Global State ──
 let currentView = 'overview';
@@ -320,7 +756,7 @@ function render(view) {
   const fn = {
     overview, ontology, agents, 'scene-furnace':sceneFurnace,
     'scene-quality':sceneQuality, 'scene-profit':sceneProfit,
-    'scene-safety':sceneSafety, 'scene-rd':sceneRD, arch, chat
+    'scene-safety':sceneSafety, 'scene-rd':sceneRD, arch, chat, echartsView
   }[view];
   if (fn) fn(c);
 }
@@ -704,7 +1140,6 @@ function sceneFurnace(c) {
         <div><b>⚡ 告警：</b>AC-08 乙炔尾气 H₂/CO 比</div><div style="color:var(--red);font-weight:700">1.95 ↓</div><div>（正常 ≥ 2.05）</div>
         <div style="margin-left:auto"><b>下游联锁：</b>ME-01 甲醇一段炉</div><div><b>当前水碳比：</b>1.10</div>
       </div>
-
       <!-- LangGraph State 可视化 -->
       <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(6,182,212,0.15);border-radius:10px;padding:16px;margin-bottom:14px">
         <div style="font-size:11px;color:rgba(6,182,212,0.7);margin-bottom:10px;letter-spacing:1px">🔗 AgentState（神经共享体）</div>
@@ -723,7 +1158,7 @@ function sceneFurnace(c) {
             <div style="color:rgba(255,255,255,0.5);font-weight:600" id="secStatus">PENDING</div>
           </div>
           <div style="background:rgba(6,182,212,0.06);border-radius:6px;padding:8px;text-align:center">
-            <div style="color:rgba(255,255,255,0.4);margin-bottom:2px">violated_rule</div>
+            <div style="color:rgba(255,255,255,0.4);margin-bottom:2px">violated</div>
             <div style="color:rgba(255,255,255,0.3);font-weight:600" id="violatedRule">--</div>
           </div>
           <div style="background:rgba(6,182,212,0.06);border-radius:6px;padding:8px;text-align:center">
@@ -732,7 +1167,6 @@ function sceneFurnace(c) {
           </div>
         </div>
       </div>
-
       <div id="furnaceContent" style="min-height:220px">
         <p style="color:rgba(255,255,255,0.4);text-align:center;margin:20px 0;font-size:12px">点击启动，观看 LangGraph 条件路由图的完整运行：<br>优化Agent → 合规Agent → 条件边（APPROVED/REJECTED）→ 终点节点</p>
       </div>
@@ -744,7 +1178,6 @@ function sceneFurnace(c) {
 
 function runFurnaceStep() {
   const steps = [
-    // Step 1: Optimization Agent 推理
     {alert:false, html:`
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:11px">
         <div style="background:rgba(6,182,212,0.06);border:1px solid rgba(6,182,212,0.2);border-radius:8px;padding:14px">
@@ -761,7 +1194,7 @@ function runFurnaceStep() {
               <div style="color:var(--amber)">📤 emitted proposed_commands:</div>
               <div style="font-family:monospace;font-size:10px;color:rgba(255,255,255,0.6)">
                 ME-01_water_carbon_ratio → <span style="color:var(--amber)">1.35</span><br>
-                AC-02_crack_furnace_load → <span style="color:var(--red)">106.0%</span> ⚠️
+                AC-02_crack_furnace_load → <span style="color:var(--red)">106.0%</span>
               </div>
             </div>
           </div>
@@ -769,18 +1202,12 @@ function runFurnaceStep() {
         <div style="background:rgba(139,92,246,0.04);border:1px solid rgba(139,92,246,0.15);border-radius:8px;padding:14px;display:flex;flex-direction:column;justify-content:center">
           <div style="text-align:center;color:rgba(255,255,255,0.5);font-size:11px">
             <div style="font-size:28px;margin-bottom:8px">⏳</div>
-            <div>待优化Agent推理完成</div>
+            <div>待合规Agent接收入站</div>
             <div style="font-size:9px;color:rgba(255,255,255,0.3)">→ 无条件流入 compliance_agent</div>
           </div>
         </div>
-      </div>
-      <!-- Update State visual -->
-      <script>
-        document.getElementById('propVal').innerHTML = 'ME-01:1.35<br>AC-02:106%';
-        document.getElementById('propVal').style.color = 'var(--amber)';
-      <\/script>`},
+      </div>`},
 
-    // Step 2: Compliance Agent 硬拦截
     {alert:true, html:`
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:11px">
         <div style="background:rgba(6,182,212,0.04);border:1px solid rgba(6,182,212,0.1);border-radius:8px;padding:14px;opacity:0.6">
@@ -799,33 +1226,24 @@ function runFurnaceStep() {
             <div style="margin-top:4px;color:var(--red);font-weight:600">❌ 拦截！规则冲突检测：</div>
             <div style="background:rgba(239,68,68,0.1);border-left:3px solid var(--red);padding:6px 8px;margin:4px 0;border-radius:0 4px 4px 0">
               <b>HS-29 无废工厂指标</b><br>
-              拟上调负荷 <b>106.0%</b> &gt; 排放安全天花板 <b>105%</b>
+              拟上调负荷 <b>106.0%</b> 超过排放安全天花板 <b>105%</b>
             </div>
             <div style="color:var(--red);font-weight:700">🚫 行使一票否决权 → REJECTED</div>
           </div>
         </div>
-      </div>
-      <script>
-        document.getElementById('secStatus').innerHTML = 'REJECTED';
-        document.getElementById('secStatus').style.color = 'var(--red)';
-        document.getElementById('violatedRule').innerHTML = 'HS-29';
-        document.getElementById('violatedRule').style.color = 'var(--red)';
-      <\/script>`},
+      </div>`},
 
-    // Step 3: Conditional Routing + Fallback
     {alert:true, html:`
       <div style="display:grid;grid-template-columns:0.6fr 1.4fr;gap:12px;font-size:11px">
-        <!-- Routing decision -->
         <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:14px;text-align:center">
           <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:6px;letter-spacing:1px">security_gate_router</div>
           <div style="font-size:36px;margin:8px 0">🔀</div>
-          <div style="color:rgba(255,255,255,0.5);font-size:10px">status == "REJECTED" ?</div>
+          <div style="color:rgba(255,255,255,0.5);font-size:10px">status == "REJECTED"</div>
           <div style="display:flex;gap:6px;margin-top:8px;justify-content:center">
-            <div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);padding:4px 8px;border-radius:4px;font-size:9px;opacity:0.3">dcs_output<br>❌ 不可达</div>
-            <div style="background:rgba(245,158,11,0.15);border:1px solid var(--amber);padding:4px 8px;border-radius:4px;font-size:9px;color:var(--amber);font-weight:600">→ fallback<br>✓ 激活</div>
+            <div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);padding:4px 8px;border-radius:4px;font-size:9px;opacity:0.3">dcs_output</div>
+            <div style="background:rgba(245,158,11,0.15);border:1px solid var(--amber);padding:4px 8px;border-radius:4px;font-size:9px;color:var(--amber);font-weight:600">→ fallback</div>
           </div>
         </div>
-        <!-- Fallback node -->
         <div style="background:rgba(245,158,11,0.06);border:2px solid rgba(245,158,11,0.4);border-radius:8px;padding:14px">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
             <span style="background:var(--amber);color:white;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">3</span>
@@ -838,22 +1256,15 @@ function runFurnaceStep() {
             <div style="font-family:monospace;font-size:10px;color:rgba(255,255,255,0.6);margin:4px 0">
               ME-01_water_carbon_ratio → <span style="color:var(--green)">1.30</span><br>
               AC-02_crack_furnace_load → <span style="color:var(--green)">105.0%</span>
-              <span style="color:var(--red);font-size:9px"> ← 从 106% 强制拍回红线内</span>
+              <span style="color:rgba(255,255,255,0.45);font-size:9px"> ← 从 106% 强制拍回红线内</span>
             </div>
           </div>
         </div>
-      </div>
-      <script>
-        document.getElementById('routeTarget').innerHTML = 'fallback';
-        document.getElementById('routeTarget').style.color = 'var(--amber)';
-      <\/script>`},
+      </div>`},
 
-    // Step 4: Final Summary
     {alert:false, html:`
       <div style="background:linear-gradient(135deg,rgba(16,185,129,0.08),rgba(6,182,212,0.06));border:1px solid rgba(16,185,129,0.2);border-radius:10px;padding:18px">
         <div style="text-align:center;font-size:16px;font-weight:700;color:var(--green);margin-bottom:12px">✅ LangGraph 推理链执行完毕</div>
-
-        <!-- Trace table -->
         <table style="width:100%;font-size:10px;border-collapse:collapse;margin-bottom:12px">
           <tr style="background:rgba(255,255,255,0.04)">
             <th style="padding:6px;text-align:left;color:rgba(255,255,255,0.45)">步骤</th>
@@ -866,8 +1277,6 @@ function runFurnaceStep() {
           <tr><td style="padding:6px">3</td><td style="padding:6px;color:var(--amber)">security_gate_router</td><td style="padding:6px;color:var(--amber)">→ fallback</td><td style="padding:6px;font-size:9px">条件路由：REJECTED → 拒绝 dcs_output，导向退守</td></tr>
           <tr style="background:rgba(255,255,255,0.02)"><td style="padding:6px">4</td><td style="padding:6px;color:var(--green)">fallback_mitigation</td><td style="padding:6px;color:var(--green)">✓</td><td style="padding:6px;font-size:9px">HS-13 预案：负荷锁死 105%，水碳比安全上调至 1.30</td></tr>
         </table>
-
-        <!-- Architecture insight -->
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;font-size:10px">
           <div style="background:rgba(6,182,212,0.08);border-radius:6px;padding:10px">
             <div style="color:var(--cyan);font-weight:600;margin-bottom:4px">🧠 State 共享体</div>
@@ -882,20 +1291,12 @@ function runFurnaceStep() {
             <div style="color:rgba(255,255,255,0.55);line-height:1.5">拦截后不崩溃不卡死，自动生成安全对冲参数。红线内寻找次优解，最大化对冲经济损失</div>
           </div>
         </div>
-      </div>
-      <script>
-        document.getElementById('secStatus').innerHTML = 'APPROVED*';
-        document.getElementById('secStatus').style.color = 'var(--green)';
-        document.getElementById('propVal').innerHTML = 'ME-01:1.30<br>AC-02:105%';
-        document.getElementById('propVal').style.color = 'var(--green)';
-        document.getElementById('routeTarget').innerHTML = 'DCS ✓';
-        document.getElementById('routeTarget').style.color = 'var(--green)';
-      <\/script>`},
+      </div>`},
   ];
   advanceScene('furnace', steps);
 }
 
-// ═══════════ SCENE: 质量溯源 ═══════════
+// ═══════════ SCENE: 质量溯源 ═══════════// ═══════════ SCENE: 质量溯源 ═══════════
 function sceneQuality(c) {
   sceneStep.quality = 0;
   c.innerHTML = `
@@ -1091,276 +1492,305 @@ function sceneRD(c) {
 // ═══════════ ARCHITECTURE ═══════════
 function arch(c) {
   c.innerHTML = `
-    <!-- HERO: 全栈技术架构图 -->
+    <!-- HERO -->
     <div class="card" style="padding:16px 20px">
       <h2>🏗️ 智枢·九章 全栈技术架构</h2>
-      <div class="subtitle">本体+智能体双螺旋 · Neo4j 图图谱底座 · IIoT 动态语义网关 · LangGraph 条件路由</div>
+      <div class="subtitle">本体+智能体双螺旋 · Neo4j 图图谱底座 · IIoT 动态语义网关 · Flink CEP 复合预警 · LangGraph 条件路由</div>
     </div>
-
     <!-- 六层架构栈 -->
-    <div style="display:flex;flex-direction:column;gap:6px">
-      <!-- L6: Entry -->
-      <div style="background:linear-gradient(135deg,rgba(139,92,246,0.12),rgba(139,92,246,0.04));border:1px solid rgba(139,92,246,0.25);border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:14px">
-        <div style="background:var(--purple);color:white;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;flex-shrink:0">L6</div>
-        <div>
-          <div style="font-weight:700;color:var(--purple);font-size:13px;margin-bottom:2px">角色入口层（Access Layer）</div>
-          <div style="font-size:10px;color:rgba(255,255,255,0.5)">企业微信 / 钉钉 / OA · 厂长 · 安全总监 · 调度员 · 工程师 多角色视角 · 字段级权限过滤</div>
-        </div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
+      <div style="background:linear-gradient(135deg,rgba(139,92,246,0.12),rgba(139,92,246,0.04));border:1px solid rgba(139,92,246,0.25);border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:14px">
+        <div style="background:var(--purple);color:white;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0">L6</div>
+        <div><div style="font-weight:700;color:var(--purple);font-size:12px">角色入口层</div><div style="font-size:9px;color:rgba(255,255,255,0.45)">企业微信/钉钉/OA · 厂长/安全总监/调度员/工程师 · 字段级权限过滤</div></div>
       </div>
-      <!-- Arrow -->
-      <div style="text-align:center;color:rgba(255,255,255,0.15);font-size:12px">▲</div>
-      <!-- L5: LangGraph Agents -->
-      <div style="background:linear-gradient(135deg,rgba(6,182,212,0.12),rgba(6,182,212,0.04));border:1px solid rgba(6,182,212,0.25);border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:14px">
-        <div style="background:var(--cyan);color:white;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;flex-shrink:0">L5</div>
-        <div>
-          <div style="font-weight:700;color:var(--cyan);font-size:13px;margin-bottom:2px">智能体执行层（LangGraph Agent Network）· 九章引擎</div>
-          <div style="font-size:10px;color:rgba(255,255,255,0.5)">8 大智能体群 · 判别→规则→生成 三层协同 · Shared State 神经共享体 · Conditional Route 条件路由门控 · A2A 通信</div>
-        </div>
+      <div style="text-align:center;color:rgba(255,255,255,0.12);font-size:10px">▲</div>
+      <div style="background:linear-gradient(135deg,rgba(6,182,212,0.12),rgba(6,182,212,0.04));border:1px solid rgba(6,182,212,0.25);border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:14px">
+        <div style="background:var(--cyan);color:white;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0">L5</div>
+        <div><div style="font-weight:700;color:var(--cyan);font-size:12px">智能体执行层 · 九章引擎 (LangGraph)</div><div style="font-size:9px;color:rgba(255,255,255,0.45)">8 大智能体群 · Shared State · Conditional Route 门控 · A2A 通信 · 判别→规则→生成</div></div>
       </div>
-      <div style="text-align:center;color:rgba(255,255,255,0.15);font-size:12px">▲</div>
-      <!-- L4: Semantic Gateway -->
-      <div style="background:linear-gradient(135deg,rgba(245,158,11,0.10),rgba(245,158,11,0.03));border:1px solid rgba(245,158,11,0.25);border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:14px">
-        <div style="background:var(--amber);color:white;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;flex-shrink:0">L4</div>
-        <div>
-          <div style="font-weight:700;color:var(--amber);font-size:13px;margin-bottom:2px">IIoT 动态语义网关（Stream Semantic Gateway）</div>
-          <div style="font-size:10px;color:rgba(255,255,255,0.5)">Kafka 高吞吐流总线 · Redis 热语义缓存（μs 级命中）· Flink/Python 流式富化 · OPC UA 统一采集 · 主动红线前置校验</div>
-        </div>
+      <div style="text-align:center;color:rgba(255,255,255,0.12);font-size:10px">▲</div>
+      <div style="background:linear-gradient(135deg,rgba(245,158,11,0.10),rgba(245,158,11,0.03));border:1px solid rgba(245,158,11,0.25);border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:14px">
+        <div style="background:var(--amber);color:white;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0">L4</div>
+        <div><div style="font-weight:700;color:var(--amber);font-size:12px">Flink CEP 复合预警 + IIoT 语义网关</div><div style="font-size:9px;color:rgba(255,255,255,0.45)">Kafka 流总线 · Redis 热语义缓存 · PyFlink CEP 多测点模式匹配 · OPC UA 统一采集</div></div>
       </div>
-      <div style="text-align:center;color:rgba(255,255,255,0.15);font-size:12px">▲</div>
-      <!-- L3: Graph DB -->
-      <div style="background:linear-gradient(135deg,rgba(16,185,129,0.10),rgba(16,185,129,0.03));border:1px solid rgba(16,185,129,0.25);border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:14px">
-        <div style="background:var(--green);color:white;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;flex-shrink:0">L3</div>
-        <div>
-          <div style="font-weight:700;color:var(--green);font-size:13px;margin-bottom:2px">企业本体层（Neo4j 图数据库 · 智枢底座）</div>
-          <div style="font-size:10px;color:rgba(255,255,255,0.5)">4 类节点（Organization · Asset · Process · Rule）· 6 类关系边 · 200+资产 · 50+工艺 · 330+规则 · 27部门 · 唯一条引约束</div>
-        </div>
+      <div style="text-align:center;color:rgba(255,255,255,0.12);font-size:10px">▲</div>
+      <div style="background:linear-gradient(135deg,rgba(16,185,129,0.10),rgba(16,185,129,0.03));border:1px solid rgba(16,185,129,0.25);border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:14px">
+        <div style="background:var(--green);color:white;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0">L3</div>
+        <div><div style="font-weight:700;color:var(--green);font-size:12px">企业本体层 · Neo4j 图数据库（智枢底座）</div><div style="font-size:9px;color:rgba(255,255,255,0.45)">4 类节点 · 6 类关系边 · 200+资产 · 50+工艺 · 330+规则 · 27部门 · Cypher 多跳推理</div></div>
       </div>
-      <div style="text-align:center;color:rgba(255,255,255,0.15);font-size:12px">▲</div>
-      <!-- L2: Time Series -->
-      <div style="background:linear-gradient(135deg,rgba(100,116,139,0.12),rgba(100,116,139,0.03));border:1px solid rgba(100,116,139,0.2);border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:14px">
-        <div style="background:var(--slate600);color:white;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;flex-shrink:0">L2</div>
-        <div>
-          <div style="font-weight:700;color:var(--slate100);font-size:13px;margin-bottom:2px">时序数据仓层（Time Series Warehouse）</div>
-          <div style="font-size:10px;color:rgba(255,255,255,0.5)">TimescaleDB / InfluxDB · 秒级时序存储 · PI System 已有资产 · 历史趋势追溯 · 长周期分析</div>
-        </div>
+      <div style="text-align:center;color:rgba(255,255,255,0.12);font-size:10px">▲</div>
+      <div style="background:linear-gradient(135deg,rgba(100,116,139,0.12),rgba(100,116,139,0.03));border:1px solid rgba(100,116,139,0.2);border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:14px">
+        <div style="background:var(--slate600);color:white;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0">L2</div>
+        <div><div style="font-weight:700;color:var(--slate100);font-size:12px">时序数据仓层</div><div style="font-size:9px;color:rgba(255,255,255,0.45)">TimescaleDB / InfluxDB · 秒级时序存储 · 冷热分离 · 长周期趋势分析</div></div>
       </div>
-      <div style="text-align:center;color:rgba(255,255,255,0.15);font-size:12px">▲</div>
-      <!-- L1: Field -->
-      <div style="background:linear-gradient(135deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:14px">
-        <div style="background:rgba(255,255,255,0.2);color:white;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;flex-shrink:0">L1</div>
-        <div>
-          <div style="font-weight:700;color:rgba(255,255,255,0.7);font-size:13px;margin-bottom:2px">边缘采集层（Field & Edge Layer）</div>
-          <div style="font-size:10px;color:rgba(255,255,255,0.35)">DCS · PLC · OPC UA Server · CEMS · LIMS · ERP · MES · 80+ 存量系统 · 信创环境全私有化部署</div>
-        </div>
+      <div style="text-align:center;color:rgba(255,255,255,0.12);font-size:10px">▲</div>
+      <div style="background:linear-gradient(135deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:14px">
+        <div style="background:rgba(255,255,255,0.2);color:white;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0">L1</div>
+        <div><div style="font-weight:700;color:rgba(255,255,255,0.7);font-size:12px">边缘采集层</div><div style="font-size:9px;color:rgba(255,255,255,0.35)">DCS · PLC · OPC UA Server · CEMS · LIMS · ERP · MES · 80+ 存量系统 · 信创全私有化</div></div>
       </div>
     </div>
 
-    <!-- Row: Neo4j Graph Schema + IIoT Data Flow -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:2px">
-      <!-- LEFT: Neo4j Schema -->
+    <!-- Row 1: Neo4j Schema + IIoT Flow -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
       <div class="card">
-        <h3 style="color:var(--green);font-size:14px;margin-bottom:10px">🧬 Neo4j 图图谱 Schema 设计</h3>
-        <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:12px">4 类节点 · 6 类关系边 · 唯一 ID 约束 · 语义索引</div>
-        <!-- Node types -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-          <div style="background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.2);border-radius:6px;padding:8px">
-            <div style="font-weight:700;color:var(--purple);font-size:11px">🏢 Organization</div>
-            <div style="font-size:9px;color:rgba(255,255,255,0.45)">27 二级单位</div>
-            <div style="font-family:monospace;font-size:8px;color:rgba(255,255,255,0.3)">ORG-YI_XIE · ORG-AN_HUAN</div>
+        <h3 style="color:var(--green);font-size:14px;margin-bottom:8px">🧬 Neo4j 图图谱 Schema</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+          <div style="background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.2);border-radius:6px;padding:6px">
+            <div style="font-weight:700;color:var(--purple);font-size:10px">🏢 Organization</div><div style="font-size:8px;color:rgba(255,255,255,0.4)">27 二级单位</div>
           </div>
-          <div style="background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.2);border-radius:6px;padding:8px">
-            <div style="font-weight:700;color:var(--cyan);font-size:11px">⚙️ Asset</div>
-            <div style="font-size:9px;color:rgba(255,255,255,0.45)">200+ 物理设备</div>
-            <div style="font-family:monospace;font-size:8px;color:rgba(255,255,255,0.3)">AST-1C150 · AST-3D594</div>
+          <div style="background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.2);border-radius:6px;padding:6px">
+            <div style="font-weight:700;color:var(--cyan);font-size:10px">⚙️ Asset</div><div style="font-size:8px;color:rgba(255,255,255,0.4)">200+ 物理设备</div>
           </div>
-          <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:6px;padding:8px">
-            <div style="font-weight:700;color:var(--amber);font-size:11px">🔄 Process</div>
-            <div style="font-size:9px;color:rgba(255,255,255,0.45)">50+ 工艺单元</div>
-            <div style="font-family:monospace;font-size:8px;color:rgba(255,255,255,0.3)">PRC-AC02 · PRC-ME01</div>
+          <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:6px;padding:6px">
+            <div style="font-weight:700;color:var(--amber);font-size:10px">🔄 Process</div><div style="font-size:8px;color:rgba(255,255,255,0.4)">50+ 工艺单元</div>
           </div>
-          <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:6px;padding:8px">
-            <div style="font-weight:700;color:var(--red);font-size:11px">📋 Rule</div>
-            <div style="font-size:9px;color:rgba(255,255,255,0.45)">330+ 业务规则</div>
-            <div style="font-family:monospace;font-size:8px;color:rgba(255,255,255,0.3)">RUL-HS29 · RUL-PO03</div>
+          <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:6px;padding:6px">
+            <div style="font-weight:700;color:var(--red);font-size:10px">📋 Rule</div><div style="font-size:8px;color:rgba(255,255,255,0.4)">330+ 业务规则</div>
           </div>
         </div>
-        <!-- Relationships table -->
-        <table style="width:100%;font-size:9px;border-collapse:collapse">
-          <tr style="background:rgba(255,255,255,0.03)">
-            <th style="padding:5px;text-align:left;color:rgba(255,255,255,0.4)">关系边</th>
-            <th style="padding:5px;text-align:left;color:rgba(255,255,255,0.4)">From → To</th>
-            <th style="padding:5px;text-align:left;color:rgba(255,255,255,0.4)">业务含义</th>
-          </tr>
-          <tr><td style="padding:5px;color:var(--purple);font-family:monospace">[:MANAGES]</td><td style="padding:5px;font-size:9px">Organization → Asset</td><td style="padding:5px;font-size:9px">管辖责任</td></tr>
-          <tr style="background:rgba(255,255,255,0.02)"><td style="padding:5px;color:var(--purple);font-family:monospace">[:RESPONSIBLE_FOR]</td><td style="padding:5px;font-size:9px">Organization → Process</td><td style="padding:5px;font-size:9px">工艺负责</td></tr>
-          <tr><td style="padding:5px;color:var(--purple);font-family:monospace">[:GOVERNS]</td><td style="padding:5px;font-size:9px">Organization → Rule</td><td style="padding:5px;font-size:9px">规则颁布</td></tr>
-          <tr style="background:rgba(255,255,255,0.02)"><td style="padding:5px;color:var(--cyan);font-family:monospace">[:UTILIZED_IN]</td><td style="padding:5px;font-size:9px">Asset → Process</td><td style="padding:5px;font-size:9px">设备用于工艺</td></tr>
-          <tr><td style="padding:5px;color:var(--amber);font-family:monospace">[:FLOWS_TO]</td><td style="padding:5px;font-size:9px">Process → Process</td><td style="padding:5px;font-size:9px">跨装置物料流</td></tr>
-          <tr style="background:rgba(255,255,255,0.02)"><td style="padding:5px;color:var(--red);font-family:monospace">[:CONSTRAINS]</td><td style="padding:5px;font-size:9px">Rule → Process/Asset</td><td style="padding:5px;font-size:9px">红线约束</td></tr>
+        <table style="width:100%;font-size:8px;border-collapse:collapse">
+          <tr style="background:rgba(255,255,255,0.03)"><th style="padding:4px;text-align:left;color:rgba(255,255,255,0.4)">关系边</th><th style="padding:4px;text-align:left;color:rgba(255,255,255,0.4)">From → To</th><th style="padding:4px;text-align:left;color:rgba(255,255,255,0.4)">含义</th></tr>
+          <tr><td style="padding:4px;color:var(--purple);font-family:monospace">[:MANAGES]</td><td style="padding:4px">Org → Asset</td><td style="padding:4px">管辖</td></tr>
+          <tr style="background:rgba(255,255,255,0.02)"><td style="padding:4px;color:var(--purple);font-family:monospace">[:RESPONSIBLE_FOR]</td><td style="padding:4px">Org → Process</td><td style="padding:4px">负责</td></tr>
+          <tr><td style="padding:4px;color:var(--purple);font-family:monospace">[:GOVERNS]</td><td style="padding:4px">Org → Rule</td><td style="padding:4px">颁布</td></tr>
+          <tr style="background:rgba(255,255,255,0.02)"><td style="padding:4px;color:var(--cyan);font-family:monospace">[:UTILIZED_IN]</td><td style="padding:4px">Asset → Process</td><td style="padding:4px">用于</td></tr>
+          <tr><td style="padding:4px;color:var(--amber);font-family:monospace">[:FLOWS_TO]</td><td style="padding:4px">Process → Process</td><td style="padding:4px">物料流</td></tr>
+          <tr style="background:rgba(255,255,255,0.02)"><td style="padding:4px;color:var(--red);font-family:monospace">[:CONSTRAINS]</td><td style="padding:4px">Rule → Process</td><td style="padding:4px">红线约束</td></tr>
         </table>
       </div>
-
-      <!-- RIGHT: IIoT Data Flow -->
       <div class="card">
-        <h3 style="color:var(--amber);font-size:14px;margin-bottom:10px">⚡ IIoT 动态语义网关</h3>
-        <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:12px">冷热分离 · 双通道映射 · 1 秒 1 发 · μs 级语义命中</div>
-        <!-- Flow pipeline -->
-        <div style="display:flex;flex-direction:column;gap:8px">
-          <!-- Step 1: OPC UA -->
-          <div style="display:flex;align-items:center;gap:10px;background:rgba(15,23,42,0.6);border-radius:8px;padding:10px">
-            <div style="background:rgba(255,255,255,0.1);border-radius:6px;padding:6px 10px;font-size:9px;font-weight:700;white-space:nowrap;flex-shrink:0">OPC UA Server</div>
-            <div style="color:rgba(255,255,255,0.2)">→</div>
-            <div style="font-size:9px;color:rgba(255,255,255,0.5)">统一全厂 DCS/PLC 标签名<br><span style="font-family:monospace;color:rgba(255,255,255,0.35)">CW_YIXIE_AC02_T102_TE_001</span></div>
+        <h3 style="color:var(--amber);font-size:14px;margin-bottom:8px">⚡ IIoT 动态语义网关</h3>
+        <div style="font-size:9px;color:rgba(255,255,255,0.4);margin-bottom:8px">冷热分离 · 双通道映射 · μs 级语义命中</div>
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:9px">
+          <div style="display:flex;align-items:center;gap:8px;background:rgba(15,23,42,0.6);border-radius:6px;padding:8px">
+            <div style="background:rgba(255,255,255,0.1);border-radius:4px;padding:3px 8px;font-weight:700;white-space:nowrap;font-size:8px">OPC UA</div>
+            <div style="color:rgba(255,255,255,0.35)">统一 DCS/PLC 标签名 → CW_YIXIE_AC02_T102_TE_001</div>
           </div>
-          <div style="text-align:center;color:rgba(255,255,255,0.15);font-size:14px">▼</div>
-          <!-- Step 2: Kafka -->
-          <div style="display:flex;align-items:center;gap:10px;background:rgba(15,23,42,0.6);border-radius:8px;padding:10px">
-            <div style="background:rgba(6,182,212,0.15);border-radius:6px;padding:6px 10px;font-size:9px;font-weight:700;white-space:nowrap;color:var(--cyan);flex-shrink:0">Kafka Cluster</div>
-            <div style="color:rgba(255,255,255,0.2)">→</div>
-            <div style="font-size:9px;color:rgba(255,255,255,0.5)">按运行部建 Topic<br><span style="font-family:monospace;color:rgba(255,255,255,0.35)">cw-tags-yixie / cw-tags-pva</span></div>
+          <div style="text-align:center;color:rgba(255,255,255,0.1)">▼</div>
+          <div style="display:flex;align-items:center;gap:8px;background:rgba(15,23,42,0.6);border-radius:6px;padding:8px">
+            <div style="background:rgba(6,182,212,0.15);border-radius:4px;padding:3px 8px;font-weight:700;white-space:nowrap;color:var(--cyan);font-size:8px">Kafka</div>
+            <div style="color:rgba(255,255,255,0.35)">按运行部建 Topic · cw-tags-yixie / cw-tags-pva</div>
           </div>
-          <div style="text-align:center;color:rgba(255,255,255,0.15);font-size:14px">▼</div>
-          <!-- Step 3: Split to hot/cold -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-            <!-- Hot: Redis -->
-            <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:10px;text-align:center">
-              <div style="font-weight:700;color:var(--red);font-size:10px;margin-bottom:4px">🔥 热通道 (ms 级)</div>
-              <div style="font-size:9px;color:rgba(255,255,255,0.45);margin-bottom:6px">Redis 语义缓存</div>
-              <div style="background:rgba(0,0,0,0.2);border-radius:4px;padding:6px;font-family:monospace;font-size:8px;line-height:1.5;color:rgba(255,255,255,0.55)">
-                tag_id → {<br>
-                &nbsp;&nbsp;process_id,<br>
-                &nbsp;&nbsp;asset_id,<br>
-                &nbsp;&nbsp;org_id,<br>
-                &nbsp;&nbsp;bound_rules,<br>
-                &nbsp;&nbsp;upper_limit<br>
-                }
-              </div>
-              <div style="font-size:8px;color:rgba(255,255,255,0.3);margin-top:4px">→ 推送给九章智能体</div>
+          <div style="text-align:center;color:rgba(255,255,255,0.1)">▼</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:6px;padding:8px;text-align:center">
+              <div style="font-weight:700;color:var(--red);font-size:9px">🔥 热通道</div>
+              <div style="font-size:8px;color:rgba(255,255,255,0.4)">Redis 语义缓存 → 九章智能体</div>
             </div>
-            <!-- Cold: TimescaleDB -->
-            <div style="background:rgba(100,116,139,0.08);border:1px solid rgba(100,116,139,0.2);border-radius:8px;padding:10px;text-align:center">
-              <div style="font-weight:700;color:var(--slate100);font-size:10px;margin-bottom:4px">❄️ 冷通道 (批量)</div>
-              <div style="font-size:9px;color:rgba(255,255,255,0.45);margin-bottom:6px">TimescaleDB 时序仓</div>
-              <div style="background:rgba(0,0,0,0.2);border-radius:4px;padding:6px;font-family:monospace;font-size:8px;line-height:1.5;color:rgba(255,255,255,0.55)">
-                hypertable(1day)<br>
-                + compression<br>
-                + retention_policy<br>
-              </div>
-              <div style="font-size:8px;color:rgba(255,255,255,0.3);margin-top:4px">→ 长周期趋势分析</div>
+            <div style="background:rgba(100,116,139,0.06);border:1px solid rgba(100,116,139,0.15);border-radius:6px;padding:8px;text-align:center">
+              <div style="font-weight:700;color:var(--slate100);font-size:9px">❄️ 冷通道</div>
+              <div style="font-size:8px;color:rgba(255,255,255,0.4)">TimescaleDB → 长周期分析</div>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Bottom Row: Cypher Query Example + Key Design Patterns -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-      <!-- Cypher Query -->
-      <div class="card">
-        <h3 style="color:var(--cyan);font-size:14px;margin-bottom:10px">🔍 Cypher 查询示例：多跳反向因果推理</h3>
-        <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:8px">当 VAE 废水突发超标，秒级穿透跨装置、跨资产、跨规则根因</div>
-        <div style="background:rgba(0,0,0,0.35);border-radius:8px;padding:12px;font-family:monospace;font-size:9px;line-height:1.6;color:rgba(255,255,255,0.75)">
-          <span style="color:var(--purple)">MATCH</span> <span style="color:var(--red)">(r:Rule)</span>-[<span style="color:var(--cyan)">:CONSTRAINS</span>]-><span style="color:var(--amber)">(p:Process {id: 'PRC-VA07'})</span><br>
-          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<-[:UTILIZED_IN]-<span style="color:var(--cyan)">(a:Asset)</span><br>
-          <span style="color:var(--purple)">MATCH</span> <span style="color:var(--purple)">(o:Organization)</span>-[<span style="color:var(--cyan)">:RESPONSIBLE_FOR</span>]-><span style="color:var(--amber)">(p)</span><br>
-          <span style="color:var(--purple)">RETURN</span> r.name <span style="color:var(--purple)">AS</span> 护栏规则,<br>
-          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;p.name <span style="color:var(--purple)">AS</span> 工艺节点,<br>
-          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a.name <span style="color:var(--purple)">AS</span> 物理设备,<br>
-          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;o.name <span style="color:var(--purple)">AS</span> 责任运行部
-        </div>
-        <div style="margin-top:8px;font-size:10px;color:var(--green);line-height:1.5">
-          ✅ 结果：HS-29 · VAC精馏精制 · 3D594精馏塔 + E505再沸器 · 乙炔运行部 + 安全环保部
-        </div>
-      </div>
-
-      <!-- Key Patterns -->
-      <div class="card">
-        <h3 style="color:var(--purple);font-size:14px;margin-bottom:10px">💡 核心设计模式</h3>
-        <div style="display:flex;flex-direction:column;gap:10px">
-          <div style="background:rgba(6,182,212,0.06);border-left:3px solid var(--cyan);border-radius:0 6px 6px 0;padding:10px 12px">
-            <div style="font-weight:700;color:var(--cyan);font-size:11px;margin-bottom:3px">冷热分离·双通道映射</div>
-            <div style="font-size:9px;color:rgba(255,255,255,0.55);line-height:1.5">Redis 热缓存处理高频实时断言（μs 命中），TimescaleDB 存储全量时序供长周期分析。避免每秒万级 DCS 标签直接冲击 Neo4j</div>
-          </div>
-          <div style="background:rgba(245,158,11,0.06);border-left:3px solid var(--amber);border-radius:0 6px 6px 0;padding:10px 12px">
-            <div style="font-weight:700;color:var(--amber);font-size:11px;margin-bottom:3px">高热蒸馏·语义翻译机</div>
-            <div style="font-size:9px;color:rgba(255,255,255,0.55);line-height:1.5">每日凌晨将 Neo4j 静态本体关系同步至 Redis Hash。流处理引擎消费 Kafka 时，微秒级完成 tag_id → 语义上下文的映射，消除 AI 的"语义盲区"</div>
-          </div>
-          <div style="background:rgba(239,68,68,0.06);border-left:3px solid var(--red);border-radius:0 6px 6px 0;padding:10px 12px">
-            <div style="font-weight:700;color:var(--red);font-size:11px;margin-bottom:3px">主动式红线前置校验</div>
-            <div style="font-size:9px;color:rgba(255,255,255,0.55);line-height:1.5">不在事故后追溯，而在时序流越界毫秒内完成红线匹配，直接拉警报强制唤醒 LangGraph 合规 Agent。安全不是事后审计，是实时硬门控</div>
-          </div>
-          <div style="background:rgba(16,185,129,0.06);border-left:3px solid var(--green);border-radius:0 6px 6px 0;padding:10px 12px">
-            <div style="font-weight:700;color:var(--green);font-size:11px;margin-bottom:3px">DCS 标签锚定·动静缝合</div>
-            <div style="font-size:9px;color:rgba(255,255,255,0.55);line-height:1.5">在 Neo4j 静态本体中为每个 Process 节点扩展 dcs_tags 数组属性，将 CW_YIXIE_AC02_T102_TE_001 物理锚定到"乙炔运行部·AC-02·T102脱硫塔·底部温度"语义坐标</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Flink CEP + LangGraph Bridge -->
+    <!-- Row 2: Flink CEP + LangGraph Bridge -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
-      <!-- Flink CEP Pattern -->
       <div class="card">
-        <h3 style="color:var(--red);font-size:14px;margin-bottom:10px">🌪️ Flink CEP 多测点复合预警</h3>
-        <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:12px">单点超标只是表象 · 空间×时间多维模式匹配 · 15 秒内跨装置因果链捕捉</div>
-        <div style="background:rgba(0,0,0,0.25);border-radius:8px;padding:12px;margin-bottom:10px">
-          <div style="font-size:10px;color:rgba(255,255,255,0.45);margin-bottom:8px">裂解炉结焦/爆管复合预警模式</div>
-          <div style="display:flex;align-items:center;gap:8px;font-size:9px">
-            <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:8px;flex:1;text-align:center">
-              <div style="color:var(--red);font-weight:700;margin-bottom:3px">Condition A</div>
-              <div style="color:rgba(255,255,255,0.6)">CW_YIXIE_AC02_TE001</div>
-              <div style="color:var(--amber)">5秒内 3 次扰动</div>
-              <div style="color:rgba(255,255,255,0.4)">每次爬升 &gt; 5°C</div>
+        <h3 style="color:var(--red);font-size:14px;margin-bottom:8px">🌪️ Flink CEP 多测点复合预警</h3>
+        <div style="font-size:9px;color:rgba(255,255,255,0.4);margin-bottom:8px">空间×时间多维模式匹配 · 15 秒跨装置因果链捕捉</div>
+        <div style="background:rgba(0,0,0,0.2);border-radius:6px;padding:10px;margin-bottom:8px">
+          <div style="font-size:9px;color:rgba(255,255,255,0.4);margin-bottom:6px">裂解炉结焦/爆管预警模式 (HS-15)</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:8px">
+            <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);border-radius:4px;padding:6px;flex:1;text-align:center">
+              <div style="color:var(--red);font-weight:700;margin-bottom:2px">Condition A</div>
+              <div style="color:rgba(255,255,255,0.5)">AC02_TE001</div><div style="color:var(--amber)">5s × 3次扰动 &gt;5°C</div>
             </div>
-            <div style="color:rgba(255,255,255,0.2);font-size:16px">→</div>
-            <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:6px;padding:8px;flex:1;text-align:center">
-              <div style="color:var(--amber);font-weight:700;margin-bottom:3px">Condition B</div>
-              <div style="color:rgba(255,255,255,0.6)">CW_YIXIE_AC02_PT002</div>
-              <div style="color:var(--amber)">10 秒内压力突降</div>
-              <div style="color:rgba(255,255,255,0.4)">瞬时跌幅 &gt; 10%</div>
+            <div style="color:rgba(255,255,255,0.15)">→</div>
+            <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);border-radius:4px;padding:6px;flex:1;text-align:center">
+              <div style="color:var(--amber);font-weight:700;margin-bottom:2px">Condition B</div>
+              <div style="color:rgba(255,255,255,0.5)">AC02_PT002</div><div style="color:var(--amber)">10s 压力跌幅 &gt;10%</div>
             </div>
           </div>
-          <div style="text-align:center;margin-top:8px;font-size:9px;color:rgba(255,255,255,0.4)">
-            <span style="color:var(--cyan)">.within(15s)</span> → 匹配成功触发 HS-15 非计划停车预防规则
-          </div>
+          <div style="text-align:center;margin-top:6px;font-size:8px;color:rgba(255,255,255,0.35)"><span style="color:var(--cyan)">.within(15s)</span> → 匹配成功 → 触发 HS-15 非计划停车预防</div>
         </div>
-        <div style="font-size:9px;color:rgba(255,255,255,0.5);line-height:1.5">
-          与 DCS 单点报警的本质区别：单看温度可能只是负荷调整，单看压力可能是下游抽气波动；但两者在 15 秒内先后发生，Flink CEP 状态机判定为裂解炉结焦/微爆管高危隐患
-        </div>
+        <div style="font-size:8px;color:rgba(255,255,255,0.45);line-height:1.5">与 DCS 单点报警的本质区别：单看温度可能是负荷调整，单看压力可能是下游波动；两者 15s 内先后发生 → 判定为结焦/微爆管高危</div>
       </div>
-
-      <!-- CEP → LangGraph Bridge -->
       <div class="card">
-        <h3 style="color:var(--purple);font-size:14px;margin-bottom:10px">🔗 CEP → LangGraph 神经桥接</h3>
-        <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:12px">从"数据感知"到"智能行动"的毫秒级闭环 · 异步解耦投递</div>
-        <div style="display:flex;flex-direction:column;gap:8px">
-          <div style="display:flex;align-items:center;gap:8px;background:rgba(15,23,42,0.6);border-radius:8px;padding:10px">
-            <div style="background:rgba(239,68,68,0.15);color:var(--red);border-radius:6px;padding:5px 10px;font-size:10px;font-weight:700;white-space:nowrap">Flink CEP Engine</div>
-            <div style="color:rgba(255,255,255,0.2)">→</div>
-            <div style="font-size:9px;color:rgba(255,255,255,0.55)">捕获复合模式 → 组装 alert_context JSON<br><span style="font-family:monospace;font-size:8px;color:rgba(255,255,255,0.35)">{rule_id, trigger_assets, description, payload}</span></div>
+        <h3 style="color:var(--purple);font-size:14px;margin-bottom:8px">🔗 CEP → LangGraph 神经桥接</h3>
+        <div style="font-size:9px;color:rgba(255,255,255,0.4);margin-bottom:8px">从"数据感知"到"智能行动"的毫秒级闭环</div>
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:9px">
+          <div style="display:flex;align-items:center;gap:6px;background:rgba(15,23,42,0.6);border-radius:6px;padding:8px">
+            <div style="background:rgba(239,68,68,0.15);color:var(--red);border-radius:4px;padding:3px 8px;font-weight:700;white-space:nowrap;font-size:8px">Flink CEP</div>
+            <div style="color:rgba(255,255,255,0.35)">捕获复合模式 → 组装 alert_context JSON</div>
           </div>
-          <div style="text-align:center;color:rgba(255,255,255,0.15)">▼</div>
-          <div style="display:flex;align-items:center;gap:8px;background:rgba(15,23,42,0.6);border-radius:8px;padding:10px">
-            <div style="background:rgba(245,158,11,0.15);color:var(--amber);border-radius:6px;padding:5px 10px;font-size:10px;font-weight:700;white-space:nowrap">Kafka Alert Topic</div>
-            <div style="color:rgba(255,255,255,0.2)">→</div>
-            <div style="font-size:9px;color:rgba(255,255,255,0.55)">异步投递 · 解耦 Flink 与 LangGraph<br><span style="font-size:8px;color:rgba(255,255,255,0.35)">避免流处理背压阻塞 AI 推理</span></div>
+          <div style="text-align:center;color:rgba(255,255,255,0.1)">▼</div>
+          <div style="display:flex;align-items:center;gap:6px;background:rgba(15,23,42,0.6);border-radius:6px;padding:8px">
+            <div style="background:rgba(245,158,11,0.15);color:var(--amber);border-radius:4px;padding:3px 8px;font-weight:700;white-space:nowrap;font-size:8px">Kafka Topic</div>
+            <div style="color:rgba(255,255,255,0.35)">异步投递 · 解耦 Flink 与 LangGraph</div>
           </div>
-          <div style="text-align:center;color:rgba(255,255,255,0.15)">▼</div>
-          <div style="display:flex;align-items:center;gap:8px;background:rgba(15,23,42,0.6);border-radius:8px;padding:10px">
-            <div style="background:rgba(139,92,246,0.15);color:var(--purple);border-radius:6px;padding:5px 10px;font-size:10px;font-weight:700;white-space:nowrap">LangGraph.invoke()</div>
-            <div style="color:rgba(255,255,255,0.2)">→</div>
-            <div style="font-size:9px;color:rgba(255,255,255,0.55)">alert_context → initial_state<br><span style="font-size:8px;color:rgba(255,255,255,0.35)">自动唤醒 optimization → compliance → dcs/fallback</span></div>
+          <div style="text-align:center;color:rgba(255,255,255,0.1)">▼</div>
+          <div style="display:flex;align-items:center;gap:6px;background:rgba(15,23,42,0.6);border-radius:6px;padding:8px">
+            <div style="background:rgba(139,92,246,0.15);color:var(--purple);border-radius:4px;padding:3px 8px;font-weight:700;white-space:nowrap;font-size:8px">LangGraph.invoke()</div>
+            <div style="color:rgba(255,255,255,0.35)">alert_context → initial_state → 自动唤醒优化→合规→dcs/fallback</div>
           </div>
         </div>
-        <div style="margin-top:10px;font-size:9px;color:var(--green);text-align:center">
-          ✅ 从测点异动到 DCS 闭环退守 · 全自动 · 无需人工提问触发
+        <div style="margin-top:8px;font-size:8px;color:var(--green);text-align:center">✅ 从测点异动到 DCS 闭环退守 · 全自动 · 无需人工提问触发</div>
+      </div>
+    </div>
+
+    <!-- Row 3: Cypher Query + Design Patterns -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
+      <div class="card">
+        <h3 style="color:var(--cyan);font-size:14px;margin-bottom:8px">🔍 Cypher 多跳因果推理</h3>
+        <div style="font-size:9px;color:rgba(255,255,255,0.4);margin-bottom:6px">VAE 废水超标 → 秒级穿透跨装置/资产/规则根因</div>
+        <div style="background:rgba(0,0,0,0.3);border-radius:6px;padding:10px;font-family:monospace;font-size:9px;line-height:1.6;color:rgba(255,255,255,0.7)">
+          <span style="color:var(--purple)">MATCH</span> <span style="color:var(--red)">(r:Rule)</span>-[<span style="color:var(--cyan)">:CONSTRAINS</span>]-><span style="color:var(--amber)">(p:Process)</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;-[:UTILIZED_IN]-<span style="color:var(--cyan)">(a:Asset)</span><br>
+          <span style="color:var(--purple)">MATCH</span> <span style="color:var(--purple)">(o:Organization)</span>-[:RESPONSIBLE_FOR]-><span style="color:var(--amber)">(p)</span><br>
+          <span style="color:var(--purple)">RETURN</span> r.name, p.name, a.name, o.name
+        </div>
+        <div style="margin-top:6px;font-size:9px;color:var(--green)">→ HS-29 · VAC精馏 · 3D594精馏塔+E505再沸器 · 乙炔运行部+安环部</div>
+      </div>
+      <div class="card">
+        <h3 style="color:var(--purple);font-size:14px;margin-bottom:8px">💡 核心设计模式</h3>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:9px">
+          <div style="background:rgba(6,182,212,0.06);border-left:3px solid var(--cyan);border-radius:0 6px 6px 0;padding:8px 10px">
+            <div style="font-weight:700;color:var(--cyan);font-size:10px">冷热分离·双通道映射</div>
+            <div style="color:rgba(255,255,255,0.5)">Redis 热缓存处理实时断言（μs），TimescaleDB 存全量时序供长周期分析</div>
+          </div>
+          <div style="background:rgba(245,158,11,0.06);border-left:3px solid var(--amber);border-radius:0 6px 6px 0;padding:8px 10px">
+            <div style="font-weight:700;color:var(--amber);font-size:10px">高热蒸馏·语义翻译机</div>
+            <div style="color:rgba(255,255,255,0.5)">Neo4j 静态本体每日同步至 Redis Hash，流引擎 μs 级完成 tag_id → 语义映射</div>
+          </div>
+          <div style="background:rgba(239,68,68,0.06);border-left:3px solid var(--red);border-radius:0 6px 6px 0;padding:8px 10px">
+            <div style="font-weight:700;color:var(--red);font-size:10px">主动红线前置校验</div>
+            <div style="color:rgba(255,255,255,0.5)">时序流越界毫秒内匹配红线，直接唤醒合规 Agent。安全不是事后审计，是实时硬门控</div>
+          </div>
+          <div style="background:rgba(16,185,129,0.06);border-left:3px solid var(--green);border-radius:0 6px 6px 0;padding:8px 10px">
+            <div style="font-weight:700;color:var(--green);font-size:10px">DCS 标签锚定·动静缝合</div>
+            <div style="color:rgba(255,255,255,0.5)">Neo4j Process 节点扩展 dcs_tags 数组，物理锚定测点到语义坐标</div>
+          </div>
         </div>
       </div>
     </div>
   `;
 }
 
-// ═══════════ CHAT ═══════════
+
+// ═══════════ ECHARTS 时序图谱 ═══════════
+function echartsView(c) {
+  c.innerHTML = `
+    <div class="card">
+      <h2>📊 时序图谱看板 · 安环红线预警</h2>
+      <div class="subtitle">DCS 实时测点 → Kafka 流总线 → Flink CEP 复合预警 → Neo4j 语义缝合 → ECharts 红线大屏</div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div>
+          <div style="font-size:16px;font-weight:700;color:var(--cyan)" id="echartsTitle">1C150氧压裂解炉 · 部分氧化裂解反应</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px">关联资产：AST-1C150 · 工艺段：PRC-AC02 · 乙炔运行部</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:12px;color:var(--red);font-weight:700">⚠ HS-29 环保红线约束</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.35)">控制天花板：1550℃ · 过去30分钟</div>
+        </div>
+      </div>
+      <div id="echartsChart" style="width:100%;height:420px"></div>
+    </div>
+    <!-- Flink CEP alert feed -->
+    <div class="card">
+      <h3 style="color:var(--amber);font-size:13px;margin-bottom:8px">🌪️ Flink CEP 实时复合预警馈送</h3>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;font-size:10px">
+        <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:24px;margin-bottom:4px">🔴</div>
+          <div style="color:var(--red);font-weight:700">18:10 红线触发</div>
+          <div style="color:rgba(255,255,255,0.5);margin-top:4px">温度 1565℃ 踩入 HS-29 阴影区<br>Flink CEP 判定结焦高危</div>
+        </div>
+        <div style="background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.2);border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:24px;margin-bottom:4px">📡</div>
+          <div style="color:var(--cyan);font-weight:700">CEP 复合匹配</div>
+          <div style="color:rgba(255,255,255,0.5);margin-top:4px">AC02_TE001 ↑ + AC02_PT002 ↓<br>15s 窗口内复合命中</div>
+        </div>
+        <div style="background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.2);border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:24px;margin-bottom:4px">🧠</div>
+          <div style="color:var(--purple);font-weight:700">LangGraph 唤醒</div>
+          <div style="color:rgba(255,255,255,0.5);margin-top:4px">alert_context 注入 State<br>优化Agent → 合规Agent</div>
+        </div>
+        <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:24px;margin-bottom:4px">🛡️</div>
+          <div style="color:var(--green);font-weight:700">退守闭环</div>
+          <div style="color:rgba(255,255,255,0.5);margin-top:4px">负荷锁死 105%<br>水碳比安全上调至 1.30</div>
+        </div>
+      </div>
+    </div>
+  `;
+  // Init ECharts on next tick after DOM renders
+  setTimeout(() => {
+    const chartDom = document.getElementById('echartsChart');
+    if (!chartDom) return;
+    const myChart = echarts.init(chartDom);
+    const option = {
+      backgroundColor: 'transparent',
+      tooltip: {
+        trigger: 'axis',
+        backgroundColor: '#1f242c',
+        borderColor: '#388bfd',
+        textStyle: { color: '#fff', fontSize: 11 },
+        formatter: function(params) {
+          let res = '<span style="color:#8b949e">' + params[0].name + '</span><br/>';
+          params.forEach(function(item) {
+            var color = item.value > 1550 ? '#ff7b72' : '#58a6ff';
+            res += item.marker + ' <span style="color:' + color + '">' + item.value + ' ℃</span><br/>';
+          });
+          return res;
+        }
+      },
+      grid: { top: '10%', left: '3%', right: '5%', bottom: '5%', containLabel: true },
+      xAxis: {
+        type: 'category',
+        data: ['17:45','17:50','17:55','18:00','18:05','18:10'],
+        axisLine: { lineStyle: { color: '#444c56' } },
+        axisLabel: { color: '#8b949e', fontSize: 11 }
+      },
+      yAxis: {
+        type: 'value', min: 1450, max: 1600,
+        splitLine: { lineStyle: { color: '#21262d', type: 'dashed' } },
+        axisLabel: { color: '#8b949e', fontSize: 11, formatter: '{value} ℃' }
+      },
+      series: [{
+        name: '裂解炉出口温度',
+        type: 'line',
+        data: [1490, 1497.5, 1505, 1520, 1542, 1565],
+        smooth: true,
+        showSymbol: true,
+        symbolSize: 8,
+        lineStyle: { width: 3, color: '#58a6ff' },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0,0,0,1,[
+            {offset:0,color:'rgba(88,166,255,0.25)'},
+            {offset:1,color:'rgba(88,166,255,0)'}
+          ])
+        },
+        markLine: {
+          symbol: ['none','none'],
+          data: [{
+            yAxis: 1550,
+            lineStyle: { color: '#f85149', type: 'solid', width: 2 },
+            label: {
+              show: true, position: 'end', formatter: 'HS-29 红线 (1550℃)',
+              color: '#f85149', fontSize: 11,
+              backgroundColor: '#1f242c', padding: [4,6], borderRadius: 4
+            }
+          }]
+        },
+        markArea: {
+          silent: true,
+          data: [[
+            { yAxis: 1550, itemStyle: { color: 'rgba(248,81,73,0.15)' } },
+            { yAxis: 1600 }
+          ]]
+        }
+      }]
+    };
+    myChart.setOption(option);
+    window.addEventListener('resize', function() { myChart.resize(); });
+  }, 200);
+}
+
+// ═══════════ CHAT ═══════════// ═══════════ CHAT ═══════════
 function chat(c) {
   c.innerHTML = `
     <div class="card">
@@ -1432,3 +1862,5 @@ document.querySelectorAll('.sidebar .item').forEach(el=>{
 });
 render('overview');
 </script>
+</body>
+</html>
